@@ -1,15 +1,6 @@
 <?php
-<?php
-$servername = getenv('MYSQL_HOST');
-$username = getenv('MYSQL_USER');
-$password = getenv('MYSQL_PASSWORD');
-$dbname = getenv('MYSQL_DATABASE');
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+require_once 'db_config.php';
 ?>
 
 <!DOCTYPE html>
@@ -75,6 +66,7 @@ if ($conn->connect_error) {
                 <a href="#" class="text-gray-700 hover:text-emerald-700">Home</a>
                 <a href="#" class="text-gray-700 hover:text-emerald-700">Destinations</a>
                 <a href="#" class="text-gray-700 hover:text-emerald-700">Packages</a>
+                <a href="booking.php" class="text-gray-700 hover:text-emerald-700">My Bookings</a>
                 <a href="#" class="text-gray-700 hover:text-emerald-700">About Us</a>
                 <a href="#" class="text-gray-700 hover:text-emerald-700">Contact</a>
             </div>
@@ -537,6 +529,38 @@ if ($conn->connect_error) {
     </footer>
 
     <script>
+                // Place inside your <script> in index.php
+        document.getElementById('booking-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+        
+            const bookingData = {
+                booking_reference: 'BK' + Math.floor(100000 + Math.random() * 900000),
+                full_name: document.getElementById('booking-name').value,
+                email: document.getElementById('booking-email').value,
+                phone: document.getElementById('booking-phone').value,
+                checkin: document.getElementById('booking-checkin').value,
+                checkout: document.getElementById('booking-checkout').value,
+                guests: document.getElementById('booking-guests').value,
+                resort_name: document.getElementById('booking-accommodation-name').textContent,
+                price: parseFloat(document.getElementById('booking-accommodation-price').textContent.replace(/[^\d.]/g, '')) || 0.00
+            };
+        
+            try {
+                const response = await fetch('process_booking.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookingData)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = 'booking.php';
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error creating booking: ' + error.message);
+            }
+        });
         // Destination data
         const destinationData = {
             bali: {
@@ -1712,55 +1736,41 @@ if ($conn->connect_error) {
             
             // Booking form submission
             bookingForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                // Generate booking reference
-                const bookingRef = 'BT' + Math.floor(100000 + Math.random() * 900000);
-                
-                // Get current accommodation details
-                const accommodationName = document.getElementById('booking-accommodation-name').textContent;
-                const accommodationLocation = document.getElementById('booking-accommodation-location').textContent;
-                
-                // Create booking data object
-                const bookingData = {
-                    booking_reference: bookingRef,
-                    full_name: document.getElementById('booking-name').value,
-                    email: document.getElementById('booking-email').value,
-                    phone: document.getElementById('booking-phone').value,
-                    checkin: document.getElementById('booking-checkin').value,
-                    checkout: document.getElementById('booking-checkout').value,
-                    guests: document.getElementById('booking-guests').value,
-                    accommodation_name: accommodationName,
-                    accommodation_location: accommodationLocation,
-                    special_requests: document.getElementById('booking-requests').value
-                };
+                   e.preventDefault();
+    
+                   const bookingData = {
+                       booking_reference: 'BK' + Math.floor(100000 + Math.random() * 900000),
+                       full_name: document.getElementById('booking-name').value,
+                       email: document.getElementById('booking-email').value,
+                       phone: document.getElementById('booking-phone').value,
+                       checkin: document.getElementById('booking-checkin').value,
+                       checkout: document.getElementById('booking-checkout').value,
+                       guests: document.getElementById('booking-guests').value,
+                       resort_name: document.getElementById('resort-name').textContent,
+                       price: document.getElementById('resort-price').value || 0.00
+                   };
 
-                try {
-                    // Send booking data to server
-                    const response = await fetch('process_booking.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(bookingData)
-                    });
+    try {
+        const response = await fetch('process_booking.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bookingData)
+        });
 
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        // Update booking reference in confirmation modal
-                        document.getElementById('booking-reference-number').textContent = bookingRef;
-                        
-                        // Show confirmation modal
-                        closeBookingModal();
-                        confirmationModal.classList.add('active');
-                    } else {
-                        alert('Error creating booking: ' + result.message);
-                    }
-                } catch (error) {
-                    alert('Error creating booking: ' + error.message);
-                }
-            });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Booking successful! Reference: ' + result.reference);
+            window.location.href = 'bookings.php'; // Redirect to bookings page
+        } else {
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        alert('Error creating booking: ' + error.message);
+    }
+});
             
             // Close confirmation button
             closeConfirmationBtn.addEventListener('click', closeConfirmationModal);
