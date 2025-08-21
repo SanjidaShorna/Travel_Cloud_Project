@@ -1697,9 +1697,55 @@
             closeModalBtn.addEventListener('click', closeBookingModal);
             
             // Booking form submission
-            bookingForm.addEventListener('submit', function(e) {
+            bookingForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                showConfirmationModal();
+                
+                // Generate booking reference
+                const bookingRef = 'BT' + Math.floor(100000 + Math.random() * 900000);
+                
+                // Get current accommodation details
+                const accommodationName = document.getElementById('booking-accommodation-name').textContent;
+                const accommodationLocation = document.getElementById('booking-accommodation-location').textContent;
+                
+                // Create booking data object
+                const bookingData = {
+                    booking_reference: bookingRef,
+                    full_name: document.getElementById('booking-name').value,
+                    email: document.getElementById('booking-email').value,
+                    phone: document.getElementById('booking-phone').value,
+                    checkin: document.getElementById('booking-checkin').value,
+                    checkout: document.getElementById('booking-checkout').value,
+                    guests: document.getElementById('booking-guests').value,
+                    accommodation_name: accommodationName,
+                    accommodation_location: accommodationLocation,
+                    special_requests: document.getElementById('booking-requests').value
+                };
+
+                try {
+                    // Send booking data to server
+                    const response = await fetch('process_booking.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(bookingData)
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Update booking reference in confirmation modal
+                        document.getElementById('booking-reference-number').textContent = bookingRef;
+                        
+                        // Show confirmation modal
+                        closeBookingModal();
+                        confirmationModal.classList.add('active');
+                    } else {
+                        alert('Error creating booking: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('Error creating booking: ' + error.message);
+                }
             });
             
             // Close confirmation button
